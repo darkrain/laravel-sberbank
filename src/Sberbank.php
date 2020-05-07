@@ -6,12 +6,12 @@
  * Simple Sberbank acquiring library
  * Based on https://securepayments.sberbank.ru/wiki/doku.php/integration:api:rest:start
  *
- * @link   https://github.com/kenvel/laravel-sberbank
+ * @link   https://github.com/darkrain/laravel-sberbank
  * @version 1.0
- * @author Dmitry Kenvel <dimult@yahoo.com>
+ * @author Dmitry Kenvel <dimult@yahoo.com>, Mikhail Ivantsov <m@progerlab.ru>
  */
 
-namespace Kenvel;
+namespace Darkrain;
 
 use Illuminate\Support\Facades\Log;
 
@@ -80,15 +80,10 @@ class Sberbank {
         $description_max_lenght = 24;
         $amount_multiplicator   = 100;
 
-        if(empty($data['currency']))
-            $data['currency'] = "RUB";
-
         $data['amount'] = intval(ceil($data['amount'] * $amount_multiplicator));
         $data['currency'] = $this->getCurrency($data['currency']);       
         $data['description'] = mb_strimwidth($data['description'], 0, $description_max_lenght - 1, '');        
 
-        Log::debug('Data');
-        Log::debug($data);
         return [
             'success'        => $this->sendRequest($this->url_init, $data),
             'error'          => $this->error,
