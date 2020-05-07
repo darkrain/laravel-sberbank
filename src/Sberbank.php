@@ -13,6 +13,8 @@
 
 namespace Kenvel;
 
+use Illuminate\Support\Facades\Log;
+
 class Sberbank {
     private $acquiring_url;
     private $access_token;
@@ -31,12 +33,21 @@ class Sberbank {
     /**
      * Inicialize Sberbank class
      * 
-     * @param string $acquiring_url like https://securepayments.sberbank.ru
-     * @param string $access_token  secure token for sberbank
+     * @param bool $is_access_by_token if true, then wiil be auth by token
+     * @param array $auth  data for auth
      */
-     public function __construct(string $acquiring_url, string $access_token) {
-	$this->acquiring_url = $acquiring_url;
-	$this->access_token  = $access_token;
+     public function __construct(bool $is_access_by_token, array $auth) {
+        $this->acquiring_url = 'https://3dsec.sberbank.ru';
+        
+        $this->is_access_by_token = $is_access_by_token;
+
+        if( $this->is_access_by_token )
+            $this->access_token  = $auth['access_token'];
+        else{
+            $this->login = $auth['login'];
+            $this->password = $auth['password'];
+        }
+        
         $this->setupUrls();
      }
 
@@ -69,10 +80,15 @@ class Sberbank {
         $description_max_lenght = 24;
         $amount_multiplicator   = 100;
 
-        $data['currency'] = $this->getCurrency();
-        $data['amount'] = $data['amount'] * $amount_multiplicator;        
+        if(empty($data['currency']))
+            $data['currency'] = "RUB";
+
+        $data['amount'] = intval(ceil($data['amount'] * $amount_multiplicator));
+        $data['currency'] = $this->getCurrency($data['currency']);       
         $data['description'] = mb_strimwidth($data['description'], 0, $description_max_lenght - 1, '');        
 
+        Log::debug('Data');
+        Log::debug($data);
         return [
             'success'        => $this->sendRequest($this->url_init, $data),
             'error'          => $this->error,
@@ -116,7 +132,14 @@ class Sberbank {
      * @return bool success or not
      */
     private function sendRequest(string $path,  array $data) {
-        $data['token']    = $this->access_token;
+        
+        if( $this->is_access_by_token )
+            $data['token']    = $this->access_token;
+        else{
+            $data['userName'] = $this->login;
+            $data['password'] = $this->password;
+        }
+        
         $data = \http_build_query($data, '', '&');
 
         if($curl = curl_init()) {
@@ -260,14 +283,14 @@ class Sberbank {
      */
     private function getCurrency($currency = 'RUB'){
         if($currency === 'EUR'){
-            return '978';
+            return 978;
         }
         if($currency === 'USD'){
-            return '840';
+            return 840;
         }
 
         if($currency === 'RUB'){
-            return '643';
+            return 643;
         }
     }
 }
