@@ -38,7 +38,11 @@ class Sberbank {
      */
      public function __construct(bool $is_access_by_token, array $auth) {
         $this->acquiring_url = 'https://3dsec.sberbank.ru';
-        
+       
+		if(!empty($auth['acquiring_url']))
+        	$this->acquiring_url = $auth['acquiring_url'];
+		
+ 
         $this->is_access_by_token = $is_access_by_token;
 
         if( $this->is_access_by_token )
